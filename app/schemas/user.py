@@ -28,3 +28,12 @@ class UserResponse(BaseModel):
 class UserLogin(BaseModel):
     email: EmailStr
     password: str
+
+
+class UserUpdate(BaseModel):
+    name: Optional[str] = None
+    lastname: Optional[str] = None
+    email: Optional[EmailStr] = None
+    title: Optional[str] = None
+    password: Optional[str] = None
+    phone: Optional[str] = None
