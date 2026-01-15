@@ -1,4 +1,6 @@
 from fastapi import FastAPI
+from app import CreateDatabaseTables
+from app.models import battery, alert, maintenance, building, user
 from app import FastAPI, CORSMiddleware
 from app.routers import auth, dashboard, energy, batteries, alerts, maintenance, building, users, logs
 
@@ -23,6 +25,8 @@ app.include_router(maintenance.router, prefix="/maintenance", tags=["maintenance
 app.include_router(building.router, prefix="/building", tags=["building"])
 app.include_router(users.router, prefix="/users", tags=["users"])
 app.include_router(logs.router, prefix="/logs", tags=["logs"])
+
+CreateDatabaseTables()
 
 @app.get("/")
 async def start():

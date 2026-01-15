@@ -1,6 +1,6 @@
 from app import BaseModel
 from app import datetime, Optional
-from enun import Enum
+from app import Enum
 
 
 class BateryType(str, Enum):

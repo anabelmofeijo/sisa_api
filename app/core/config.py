@@ -6,7 +6,7 @@ import os
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # Caminho da pasta do banco
-DB_DIR = os.path.join(BASE_DIR, 'app', 'db')  
+DB_DIR = os.path.join(BASE_DIR,'db')  
 os.makedirs(DB_DIR, exist_ok=True)  # Cria a pasta se não existir
 
 # Caminho completo do banco
