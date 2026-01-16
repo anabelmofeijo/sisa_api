@@ -17,7 +17,8 @@ from sqlalchemy import (
     Float,
     ForeignKey
 )
-from app.core.config import Base, db
+from app.core.config import Base, db, SessionLocal, Session
+
 
 def CreateDatabaseTables():
     Base.metadata.create_all(bind=db.get_bind())
