@@ -22,8 +22,9 @@ class UserResponse(BaseModel):
     phone: Optional[str] = None
     created_at: Optional[datetime] = None
 
-    class Config:
-        orm_mode = True
+    model_config = {
+        "from_attributes": True
+    }
 
 class UserLogin(BaseModel):
     email: EmailStr

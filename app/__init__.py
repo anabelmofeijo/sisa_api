@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter
+from fastapi import FastAPI, APIRouter, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, EmailStr
 from typing import Literal, Optional, Dict
@@ -17,8 +17,8 @@ from sqlalchemy import (
     Float,
     ForeignKey
 )
-from app.core.config import Base, db, SessionLocal, Session
+from app.core.config import Base, SessionLocal, get_db
 
 
 def CreateDatabaseTables():
-    Base.metadata.create_all(bind=db.get_bind())
+    Base.metadata.create_all(bind=SessionLocal().get_bind())

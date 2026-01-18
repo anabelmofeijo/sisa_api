@@ -5,8 +5,8 @@ from app.schemas.user import UserCreate, UserResponse
 
 
 class CRUDUser:
-
-    def create_user(self, db: Session, user: UserCreate) -> UserResponse:
+    @staticmethod
+    def create_user (db: Session, user: UserCreate) -> UserResponse:
         db_user = User(
             name=user.name,
             lastname=user.lastname,
@@ -20,3 +20,45 @@ class CRUDUser:
         db.refresh(db_user)
         return UserResponse.from_orm(db_user)
     
+    @staticmethod
+    def get_user_by_email(db: Session, email: str) -> Optional[UserResponse]:
+        db_user = db.query(User).filter(User.email == email).first()
+        if db_user:
+            return db_user
+        return None
+    
+    @staticmethod
+    def get_user_by_password(db: Session, password: str) -> Optional[UserResponse]:
+        db_user = db.query(User).filter(User.password == password).first()
+        if db_user:
+            return UserResponse.from_orm(db_user)
+        return None
+    
+    @staticmethod
+    def list_users(db: Session) -> list[UserResponse]:
+        users = db.query(User).all()
+        return [UserResponse.from_orm(user) for user in users]
+    
+    @staticmethod
+    def delete_user(db: Session, user_id: int) -> bool:
+        db_user = db.query(User).filter(User.id == user_id).first()
+        if db_user:
+            db.delete(db_user)
+            db.commit()
+            return True
+        return False
+    
+    @staticmethod
+    def update_user(db: Session, user_id: int, user_update: UserCreate) -> Optional[UserResponse]:
+        db_user = db.query(User).filter(User.id == user_id).first()
+        if db_user:
+            db_user.name = user_update.name
+            db_user.lastname = user_update.lastname
+            db_user.email = user_update.email
+            db_user.title = user_update.title
+            db_user.password = user_update.password
+            db_user.phone = user_update.phone
+            db.commit()
+            db.refresh(db_user)
+            return UserResponse.from_orm(db_user)
+        return None
