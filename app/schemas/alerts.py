@@ -19,7 +19,8 @@ class AlertCreate(BaseModel):
     device_id: Optional[int] 
     measured_value: Optional[float] 
     unit: Optional[str] 
-    detected_at: Optional[datetime] 
+    detected_at: Optional[datetime]
+    status: AlertStatus = AlertStatus.active 
 
 class AlertResolve(BaseModel):
     status: AlertStatus 
