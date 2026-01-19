@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from app import CreateDatabaseTables
 from app.models import battery, alert, maintenance, building, user
 from app import FastAPI, CORSMiddleware
-from app.routers import auth, dashboard, energy, batteries, alerts, maintenance, building, users, logs
+from app.routers import dashboard, energy, batteries, alerts, maintenance, building, users, logs
 
 app = FastAPI(title="SISA API", version="1.0")
 
@@ -16,7 +16,6 @@ app.add_middleware(
 
 
 # Routers
-app.include_router(auth.router, prefix="/auth", tags=["auth"])
 app.include_router(dashboard.router, prefix="/dashboard", tags=["dashboard"])
 app.include_router(energy.router, prefix="/energy", tags=["energy"])
 app.include_router(batteries.router, prefix="/batteries", tags=["batteries"])
