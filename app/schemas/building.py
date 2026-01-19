@@ -1,7 +1,7 @@
 from app import BaseModel
 
 
-class BuildingEnergyTopKPI(BaseModel):
+class BuildingEnergyTopKPICreate(BaseModel):
     id: int
     # Card 1 
     surplus_available_kwh: float
