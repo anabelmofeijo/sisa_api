@@ -1,10 +1,11 @@
 from app.models.maintenance import Maintenance
-from app.schemas.maintenance import MaintenanceCreate, MaintenanceHistoryItem
+from app.schemas.maintenance import MaintenanceCreate, MaintenanceHistoryItem, MaintenanceStatus
 from app import SessionLocal, get_db, HTTPException, Depends
 from app.schemas.maintenance import MaintenanceComplete, MaintenanceDashboardResponse
 from sqlalchemy.orm import Session
+from datetime import date, timedelta
 
-
+"""
 
 class CrudMaintenance:
     
@@ -92,4 +93,115 @@ class CrudMaintenance:
         if not db_maintenance:
             raise HTTPException(status_code=404, detail="Maintenance record not found")
         db.delete(db_maintenance)
+        db.commit()"""
+
+MAINTENANCE_INTERVAL_DAYS = 90  # 3 meses (exemplo)
+
+
+class CrudMaintenance:
+
+    @staticmethod
+    def create_component(db: Session, data: MaintenanceCreate):
+        component = Maintenance(
+            component_id=data.component_id,
+            maintenance_type=data.maintenance_type,
+            scheduled_date=data.scheduled_date,
+            notes=data.notes,
+            completed_at=None
+        )
+        db.add(component)
+        db.commit()
+        db.refresh(component)
+        return component
+
+    @staticmethod
+    def complete_maintenance(
+        db: Session,
+        maintenance_id: int,
+        data: MaintenanceComplete
+    ):
+        component = db.query(Maintenance).filter(Maintenance.id == maintenance_id).first()
+
+        if not component:
+            raise HTTPException(status_code=404, detail="Componente não encontrado")
+
+        today = data.completed_at or date.today()
+
+        component.last_maintenance_date = today
+        component.next_maintenance_date = today + timedelta(days=MAINTENANCE_INTERVAL_DAYS)
+        component.is_overdue = False
+        component.status = MaintenanceStatus
+        component.notes = data.notes
+
+        db.commit()
+        db.refresh(component)
+        return component
+
+    @staticmethod
+    def get_maintenance_history(db: Session, component_id: int):
+        history = (
+            db.query(Maintenance)
+            .filter(Maintenance.component_id == component_id)
+            .order_by(Maintenance.last_maintenance_date.desc())
+            .all()
+        )
+        return [MaintenanceHistoryItem.from_orm(item) for item in history]
+
+
+    @staticmethod
+    def get_all_components(db: Session):
+        return db.query(Maintenance).all()
+
+
+    @staticmethod
+    def maintenance_dashboard(db: Session) -> MaintenanceDashboardResponse:
+
+        components = db.query(Maintenance).all()
+
+        if not components:
+            return MaintenanceDashboardResponse(
+                kpis={
+                    "operating_hours": 0,
+                    "total_trips": 0,
+                    "last_maintenance_date": None,
+                    "next_maintenance_date": None
+                },
+                components=[],
+                history=[]
+            )
+
+      
+        total_hours = sum(c.operating_hours or 0 for c in components)
+
+        last_dates = [c.last_maintenance_date for c in components if c.last_maintenance_date]
+        next_dates = [c.next_maintenance_date for c in components if c.next_maintenance_date]
+
+        kpis = {
+            "operating_hours": total_hours,
+            "total_trips": 0,  
+            "last_maintenance_date": max(last_dates) if last_dates else None,
+            "next_maintenance_date": min(next_dates) if next_dates else None
+        }
+
+        history = (
+            db.query(Maintenance)
+            .order_by(Maintenance.last_maintenance_date.desc())
+            .limit(10)
+            .all()
+        )
+
+        return MaintenanceDashboardResponse(
+            kpis=kpis,
+            components=components,
+            history=[MaintenanceHistoryItem.from_orm(h) for h in history]
+        )
+
+    @staticmethod
+    def delete_maintenance(db: Session, maintenance_id: int):
+        component = db.query(Maintenance).filter(Maintenance.id == maintenance_id).first()
+
+        if not component:
+            raise HTTPException(status_code=404, detail="Registro não encontrado")
+
+        db.delete(component)
         db.commit()

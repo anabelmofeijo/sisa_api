@@ -9,31 +9,35 @@ router = APIRouter()
 async def running():
     return {"message": "maintenance is running"}
 
-@router.post("/create/")
-def create_maintenance(maintenance: MaintenanceCreate, db: Session = Depends(get_db)):  
-    return CrudMaintenance.create_maintenance(db, maintenance)
-
-@router.post("/create_component/")
-def create_component_maintenance(component_maintenance: MaintenanceCreate, db: Session = Depends(get_db)):  
-    return CrudMaintenance.create_component_maintenance(db, component_maintenance)
-
-@router.put("/complete/{maintenance_id}")
-def complete_maintenance(maintenance_id: int, maintenance_complete: MaintenanceComplete, db: Session = Depends(get_db)):
-    return CrudMaintenance.complete_maintenance(db, maintenance_id, maintenance_complete)
-
-@router.get("/history/{component_id}", response_model=list[MaintenanceHistoryItem])
-def get_maintenance_history(component_id: int,  db: Session = Depends(get_db)):
-    return CrudMaintenance.get_maintenance_history(db, component_id)
-
-@router.get("/all/",)
-def get_all_maintenances(db: Session = Depends(get_db)):
-    return CrudMaintenance.get_all_maintenances(db)
-
-@router.get("/dashboard/", response_model=MaintenanceDashboardResponse)
+@router.get("/dashboard", response_model=MaintenanceDashboardResponse)
 def maintenance_dashboard(db: Session = Depends(get_db)):
     return CrudMaintenance.maintenance_dashboard(db)
 
-@router.delete("/delete/{maintenance_id}")
-def delete_maintenance(maintenance_id: int, db: Session = Depends(get_db)): 
+@router.get("/components")
+def get_components(db: Session = Depends(get_db)):
+    return CrudMaintenance.get_all_components(db)
+
+@router.post("/components", status_code=201)
+def create_component(data: MaintenanceCreate, db: Session = Depends(get_db)):
+    return CrudMaintenance.create_component(db, data)
+
+
+@router.post("/components/{maintenance_id}/complete")
+def complete_maintenance(
+    maintenance_id: int,
+    data: MaintenanceComplete,
+    db: Session = Depends(get_db)
+):
+    return CrudMaintenance.complete_maintenance(db, maintenance_id, data)
+
+@router.get(
+    "/components/{component_id}/history",
+    response_model=list[MaintenanceHistoryItem]
+)
+def get_history(component_id: int, db: Session = Depends(get_db)):
+    return CrudMaintenance.get_maintenance_history(db, component_id)
+
+@router.delete("/components/{maintenance_id}")
+def delete_component(maintenance_id: int, db: Session = Depends(get_db)):
     CrudMaintenance.delete_maintenance(db, maintenance_id)
-    return {"message": "Maintenance record deleted successfully"}
+    return {"message": "Componente removido com sucesso"}

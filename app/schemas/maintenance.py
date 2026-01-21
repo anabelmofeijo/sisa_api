@@ -17,16 +17,16 @@ class MaintenanceType(str, Enum):
 class MaintenanceKPI(BaseModel):
     operating_hours: int
     total_trips: int
-    last_maintenance_date: datetime
-    next_maintenance_date: datetime
+    last_maintenance_date: Optional[datetime] = None
+    next_maintenance_date: Optional[datetime] = None
 
 class ComponentMaintenance(BaseModel):
     id: int
     name: str
     operating_hours: int
 
-    last_maintenance_date: datetime
-    next_maintenance_date: datetime
+    last_maintenance_date: Optional[datetime] = None
+    next_maintenance_date: Optional[datetime] = None
 
     is_overdue: bool
     reliability_percent: float
