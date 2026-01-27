@@ -41,3 +41,17 @@ class AlertResponse(BaseModel):
 
     class Config:
         from_attributes = True  
+
+class ElevatorWorkingAlert(BaseModel):
+    elevator_id: int
+    is_working: bool
+    reported_at: datetime
+
+class ElevatorWorkingAlertResponse(ElevatorWorkingAlert):
+    id: int
+    is_working: bool
+    reported_at: datetime
+    created_at: datetime
+
+    class Config:
+        from_attributes = True

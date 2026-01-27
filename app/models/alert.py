@@ -24,3 +24,16 @@ class Alert(Base):
     resolved_at = Column(DateTime(timezone=True), nullable=True)
 
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class ElevatorWorkingAlert(Base):
+    __tablename__ = "elevator_working_alerts"
+
+    id = Column(Integer, primary_key=True, index=True)
+
+    elevator_id = Column(Integer, nullable=False)
+    is_working = Column(Integer, nullable=False)  # 1 para funcionando, 0 para não funcionando
+
+    reported_at = Column(DateTime(timezone=True), nullable=False)
+
+    created_at = Column(DateTime(timezone=True), server_default=func.now())

@@ -2,6 +2,7 @@ from app.models.alert import Alert
 from app.schemas.alerts import AlertCreate, AlertResponse, AlertResolve
 from app import SessionLocal, get_db, HTTPException, Depends
 from sqlalchemy.orm import Session
+from app.schemas.alerts import ElevatorWorkingAlert, ElevatorWorkingAlertResponse
 
 
 class AlertCRUD:
@@ -53,3 +54,21 @@ class AlertCRUD:
             raise HTTPException(status_code=404, detail="Alert not found")
         db.delete(db_alert)
         db.commit()
+
+    @staticmethod
+    def report_elevator_working_status(db: Session, alert: ElevatorWorkingAlert) -> ElevatorWorkingAlertResponse:
+        db_alert = Alert(
+            elevator_id=alert.elevator_id,
+            is_working=1 if alert.is_working else 0,
+            reported_at=alert.reported_at
+        )
+        db.add(db_alert)
+        db.commit()
+        db.refresh(db_alert)
+        return ElevatorWorkingAlertResponse(
+            id=db_alert.id,
+            elevator_id=alert.elevator_id,
+            is_working=alert.is_working,
+            reported_at=alert.reported_at,
+            created_at=db_alert.created_at
+        )

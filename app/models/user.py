@@ -13,7 +13,7 @@ class User(Base):
 
     email = Column(String(150), unique=True, index=True, nullable=False)
 
-    title = Column(String(100), nullable=False)
+    building = Column(String(100), nullable=False)
 
     password = Column(String(255), nullable=False)
 

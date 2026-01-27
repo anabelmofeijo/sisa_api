@@ -7,7 +7,7 @@ class UserCreate(BaseModel):
     name: str
     lastname: str
     email: EmailStr
-    title: str
+    building : str
     password: str
     phone: Optional[str] = None
     created_at: Optional[datetime] = None
@@ -18,7 +18,7 @@ class UserResponse(BaseModel):
     name: str
     lastname: str
     email: EmailStr
-    title: str
+    building: str
     phone: Optional[str] = None
     created_at: Optional[datetime] = None
 
@@ -35,6 +35,6 @@ class UserUpdate(BaseModel):
     name: Optional[str] = None
     lastname: Optional[str] = None
     email: Optional[EmailStr] = None
-    title: Optional[str] = None
+    building: Optional[str] = None
     password: Optional[str] = None
     phone: Optional[str] = None

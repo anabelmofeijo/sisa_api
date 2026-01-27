@@ -2,6 +2,7 @@ from app import APIRouter, HTTPException, Depends, get_db
 from sqlalchemy.orm import Session
 from app.schemas.alerts import AlertCreate, AlertResponse, AlertResolve
 from app.crud.alert import AlertCRUD
+from app.schemas.alerts import ElevatorWorkingAlert, ElevatorWorkingAlertResponse
 
 
 router = APIRouter()
@@ -30,3 +31,11 @@ def resolve_alert(alert_id: int, alert_resolve: AlertResolve, db: Session = Depe
 def delete_alert(alert_id: int, db: Session = Depends(get_db)): 
     AlertCRUD.delete_alert(db, alert_id)
     return {"message": "Alert deleted successfully"}
+
+@router.post("/report_elevator_working_status/", response_model=ElevatorWorkingAlertResponse)
+def report_elevator_working_status(alert: ElevatorWorkingAlert, db: Session = Depends(get_db)):
+    return AlertCRUD.report_elevator_working_status(db, alert)
+
+@router.get("/elevator_working_alerts/", response_model=list[ElevatorWorkingAlertResponse])
+def get_elevator_working_alerts(db: Session = Depends(get_db)):
+    return AlertCRUD.get_elevator_working_alerts(db)

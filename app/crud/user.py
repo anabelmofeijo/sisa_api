@@ -11,7 +11,7 @@ class CRUDUser:
             name=user.name,
             lastname=user.lastname,
             email=user.email,
-            title=user.title,
+            building=user.building,
             password=user.password, 
             phone=user.phone,
         )
@@ -55,7 +55,7 @@ class CRUDUser:
             db_user.name = user_update.name
             db_user.lastname = user_update.lastname
             db_user.email = user_update.email
-            db_user.title = user_update.title
+            db_user.building = user_update.building
             db_user.password = user_update.password
             db_user.phone = user_update.phone
             db.commit()
