@@ -18,7 +18,7 @@ app.add_middleware(
 
 # Routers
 app.include_router(energy.router, prefix="/energy", tags=["energy"])
-app.include_router(batteries.router, prefix="/batteries", tags=["batteries"])
+app.include_router(batteries.router, prefix="/batery", tags=["batery"])
 app.include_router(alerts.router, prefix="/alerts", tags=["alerts"])
 app.include_router(maintenance.router, prefix="/maintenance", tags=["maintenance"])
 app.include_router(building.router, prefix="/building", tags=["building"])
