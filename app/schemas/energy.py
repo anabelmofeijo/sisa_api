@@ -6,7 +6,6 @@ from app import BaseModel, datetime, Optional, Dict
 class ActiveEnergyCreate(BaseModel):
     elevator: bool
     painel: bool
-    created_at: Optional[datetime] = None
 
 
 class ActiveEnergyResponse(BaseModel):
@@ -21,7 +20,6 @@ class ActiveEnergyResponse(BaseModel):
 class BuildingEnergyCreate(BaseModel):
     supplied_energy: float
     main_destination: str
-    created_at: Optional[datetime] = None
 
 class BuildingEnergyResponse(BaseModel):
     id: int
@@ -39,7 +37,6 @@ class EnergyCreate(BaseModel):
     energy_consumed: float
     energy_stored: float
     energy_origin: Dict[str, float]
-    created_at: Optional[datetime] = None
 
 class EnergyResponse(BaseModel):
     id: int

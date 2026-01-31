@@ -3,14 +3,12 @@ from app import datetime, Optional
 
 
 class UserCreate(BaseModel):
-    id: int
     name: str
     lastname: str
     email: EmailStr
     building : str
     password: str
     phone: Optional[str] = None
-    created_at: Optional[datetime] = None
 
 
 class UserResponse(BaseModel):

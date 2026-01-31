@@ -29,7 +29,6 @@ class BatteryCreate(BaseModel):
     temperature: float
     voltage: float
     current: float
-    created_at: Optional[datetime] = None
 
 
 class BatteryResponse(BaseModel):

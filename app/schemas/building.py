@@ -2,7 +2,6 @@ from app import BaseModel
 
 
 class BuildingEnergyTopKPICreate(BaseModel):
-    id: int
     # Card 1 
     surplus_available_kwh: float
     surplus_vs_daily_avg_percent: float

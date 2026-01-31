@@ -19,7 +19,6 @@ class AlertCreate(BaseModel):
     device_id: Optional[int] 
     measured_value: Optional[float] 
     unit: Optional[str] 
-    detected_at: Optional[datetime]
     status: AlertStatus = AlertStatus.active 
 
 class AlertResolve(BaseModel):
@@ -45,7 +44,6 @@ class AlertResponse(BaseModel):
 class ElevatorWorkingAlert(BaseModel):
     elevator_id: int
     is_working: bool
-    reported_at: datetime
 
 class ElevatorWorkingAlertResponse(ElevatorWorkingAlert):
     id: int
