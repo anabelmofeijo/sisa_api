@@ -1,26 +1,31 @@
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, declarative_base
 import os
+from dotenv import load_dotenv
+from sqlalchemy import create_engine
+from sqlalchemy.orm import declarative_base, sessionmaker
 
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-DB_DIR = os.path.join(BASE_DIR, "db")
-os.makedirs(DB_DIR, exist_ok=True)
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+load_dotenv(os.path.join(PROJECT_ROOT, ".env"), override=True)
 
-DATABASE_URL = f"sqlite:///{os.path.join(DB_DIR, 'database.db')}"
+DATABASE_URL = os.getenv("DATABASE_URL")
+if not DATABASE_URL:
+    raise RuntimeError("DATABASE_URL nao definida no ambiente.")
 
-engine = create_engine(
-    DATABASE_URL, connect_args={"check_same_thread": False}
-)
+# Ajusta URLs antigas
+if DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+
+# Cria engine PostgreSQL
+engine = create_engine(DATABASE_URL, pool_pre_ping=True, connect_args={"sslmode": "require"})
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 Base = declarative_base()
 
-
+# Função de dependência para FastAPI
 def get_db():
     db = SessionLocal()
     try:
         yield db
     finally:
-        db.close()
+        db.close() 
