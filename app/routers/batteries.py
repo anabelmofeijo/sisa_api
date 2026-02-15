@@ -21,7 +21,7 @@ async def running():
     return {"message": "batteries is running"}
 
 @router.post("/create_battery", response_model=BatteryResponse)
-def create_battery(battery: BatteryCreate, db: Session = Depends(get_db)):
+async def create_battery(battery: BatteryCreate, db: Session = Depends(get_db)):
     """
     Create a new battery.
 
@@ -39,7 +39,7 @@ def create_battery(battery: BatteryCreate, db: Session = Depends(get_db)):
     return crud.create_battery(db, battery)
 
 @router.get("/list_batteries", response_model=list[BatteryResponse])
-def list_batteries(db: Session = Depends(get_db)):
+async def list_batteries(db: Session = Depends(get_db)):
     """
     Retrieve all batteries.
 
@@ -55,7 +55,7 @@ def list_batteries(db: Session = Depends(get_db)):
     return crud.get_all_batteries(db)
 
 @router.get("/get_battery/{battery_id}", response_model=BatteryResponse)
-def get_battery(battery_id: int, db: Session = Depends(get_db)):
+async def get_battery(battery_id: int, db: Session = Depends(get_db)):
     """
     Retrieve a battery by ID.
 
@@ -76,7 +76,7 @@ def get_battery(battery_id: int, db: Session = Depends(get_db)):
     return crud.get_battery(db, battery_id)
 
 @router.get("/get_batteries_by_name/{battery_name}", response_model=list[BatteryResponse])
-def get_batteries_by_name(battery_name: str, db: Session = Depends(get_db)):
+async def get_batteries_by_name(battery_name: str, db: Session = Depends(get_db)):
     """
     Retrieve batteries by name.
 

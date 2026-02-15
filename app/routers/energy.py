@@ -17,7 +17,7 @@ async def running():
     return {"message": "energy is running"} 
 
 @router.post("/create_energy", response_model=EnergyResponse)
-def create_energy(energy: EnergyCreate, db=Depends(get_db)):
+async def create_energy(energy: EnergyCreate, db=Depends(get_db)):
     """
     Create a new energy record.
 
@@ -35,7 +35,7 @@ def create_energy(energy: EnergyCreate, db=Depends(get_db)):
     return crud.create_energy(db, energy)
 
 @router.get("/get_energy/{energy_id}", response_model=EnergyResponse)
-def get_energy(energy_id: int, db=Depends(get_db)):
+async def get_energy(energy_id: int, db=Depends(get_db)):
     """
     Retrieve energy data by ID.
 
@@ -55,7 +55,7 @@ def get_energy(energy_id: int, db=Depends(get_db)):
     return crud.get_energy(db, energy_id)
 
 @router.get("/list_energy", response_model=list[EnergyResponse])    
-def list_energy(db=Depends(get_db)):
+async def list_energy(db=Depends(get_db)):
     """
     Retrieve all energy records.
 

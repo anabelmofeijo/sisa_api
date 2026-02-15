@@ -18,7 +18,7 @@ async def running():
     return {"message": "building is running"}
 
 @router.get("/{building_id}/energy-dashboard")
-def building_energy_dashboard(building_id: int, db: Session = Depends(get_db)):
+async def building_energy_dashboard(building_id: int, db: Session = Depends(get_db)):
     """
     Retrieve building energy dashboard.
 
@@ -35,7 +35,7 @@ def building_energy_dashboard(building_id: int, db: Session = Depends(get_db)):
     return CrudBuilding.get_building_energy_top_kpi(db, building_id)
 
 @router.post("/energy-top-kpi", status_code=201)
-def create_building_energy_top_kpi(
+async def create_building_energy_top_kpi(
     data: BuildingEnergyTopKPICreate,
     db: Session = Depends(get_db)
 ):
@@ -55,7 +55,7 @@ def create_building_energy_top_kpi(
     return CrudBuilding.create_building_energy_top_kpi(db, data)
 
 @router.put("/energy-top-kpi/{kpi_id}")
-def update_building_energy_top_kpi(
+async def update_building_energy_top_kpi(
     kpi_id: int,
     data: BuildingEnergyTopKPICreate,
     db: Session = Depends(get_db)
@@ -77,7 +77,7 @@ def update_building_energy_top_kpi(
     return CrudBuilding.update_building_energy_top_kpi(db, kpi_id, data)
 
 @router.delete("/energy-top-kpi/{kpi_id}")
-def delete_building_energy_top_kpi(
+async def delete_building_energy_top_kpi(
     kpi_id: int,
     db: Session = Depends(get_db)
 ):

@@ -2,6 +2,7 @@ from app.models.energy import Energy
 from app.schemas.energy import EnergyCreate, EnergyResponse
 from app import SessionLocal, get_db, HTTPException, Depends
 from sqlalchemy.orm import Session
+from datetime import datetime
 
 
 class EnergyCRUD:
@@ -12,7 +13,7 @@ class EnergyCRUD:
             energy_consumed=energy.energy_consumed,
             energy_stored=energy.energy_stored,
             energy_origin=energy.energy_origin,
-            created_at=energy.created_at
+            created_at= datetime.utcnow() 
         )
         db.add(db_energy)
         db.commit()

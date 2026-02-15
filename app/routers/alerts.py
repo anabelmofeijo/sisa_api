@@ -19,7 +19,7 @@ async def running():
     return {"message": "alerts is running"}
 
 @router.post("/create/", response_model=AlertResponse)
-def create_alert(alert: AlertCreate, db: Session = Depends(get_db)):
+async def create_alert(alert: AlertCreate, db: Session = Depends(get_db)):
     """
     Create a new alert.
 
@@ -36,7 +36,7 @@ def create_alert(alert: AlertCreate, db: Session = Depends(get_db)):
     return AlertCRUD.create_alert(db, alert)
 
 @router.get("/get_alert_by_id/{alert_id}", response_model=AlertResponse)
-def get_alert(alert_id: int, db: Session = Depends(get_db)):
+async def get_alert(alert_id: int, db: Session = Depends(get_db)):
     """
     Retrieve an alert by ID.
 
@@ -55,7 +55,7 @@ def get_alert(alert_id: int, db: Session = Depends(get_db)):
     return AlertCRUD.get_alert(db, alert_id)
 
 @router.get("/get_all_alerts/", response_model=list[AlertResponse])
-def get_all_alerts(db: Session = Depends(get_db)):
+async def get_all_alerts(db: Session = Depends(get_db)):
     """
     Retrieve all alerts.
 
@@ -70,7 +70,7 @@ def get_all_alerts(db: Session = Depends(get_db)):
     return AlertCRUD.get_all_alerts(db)
 
 @router.put("/resolve/{alert_id}", response_model=AlertResponse)
-def resolve_alert(alert_id: int, alert_resolve: AlertResolve, db: Session = Depends(get_db)):
+async def resolve_alert(alert_id: int, alert_resolve: AlertResolve, db: Session = Depends(get_db)):
     """
     Resolve an alert.
 
@@ -88,7 +88,7 @@ def resolve_alert(alert_id: int, alert_resolve: AlertResolve, db: Session = Depe
     return AlertCRUD.resolve_alert(db, alert_id, alert_resolve)
 
 @router.delete("/delete_alert/{alert_id}")
-def delete_alert(alert_id: int, db: Session = Depends(get_db)):
+async def delete_alert(alert_id: int, db: Session = Depends(get_db)):
     """
     Delete an alert by ID.
 
@@ -105,7 +105,7 @@ def delete_alert(alert_id: int, db: Session = Depends(get_db)):
     return {"message": "Alert deleted successfully"}
 
 @router.post("/report_elevator_working_status/", response_model=ElevatorWorkingAlertResponse)
-def report_elevator_working_status(alert: ElevatorWorkingAlert, db: Session = Depends(get_db)):
+async def report_elevator_working_status(alert: ElevatorWorkingAlert, db: Session = Depends(get_db)):
     """
     Report elevator working status.
 
@@ -122,7 +122,7 @@ def report_elevator_working_status(alert: ElevatorWorkingAlert, db: Session = De
     return AlertCRUD.report_elevator_working_status(db, alert)
 
 @router.get("/elevator_working_alerts/", response_model=list[ElevatorWorkingAlertResponse])
-def get_elevator_working_alerts(db: Session = Depends(get_db)):
+async def get_elevator_working_alerts(db: Session = Depends(get_db)):
     """
     Retrieve all elevator working status alerts.
 

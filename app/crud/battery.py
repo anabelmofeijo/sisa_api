@@ -2,6 +2,7 @@ from app.models.battery import Battery
 from app.schemas.battery import BatteryCreate, BatteryResponse
 from app import SessionLocal, get_db, HTTPException, Depends
 from sqlalchemy.orm import Session  
+from datetime import datetime
 
 
 class BatteryCRUD:
@@ -15,7 +16,7 @@ class BatteryCRUD:
             temperature=battery.temperature,
             voltage=battery.voltage,
             current=battery.current,
-            created_at=battery.created_at
+            created_at= datetime.utcnow()
         )
         db.add(db_battery)
         db.commit()
