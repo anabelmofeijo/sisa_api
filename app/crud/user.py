@@ -2,17 +2,18 @@ from typing import Optional
 from sqlalchemy.orm import Session
 from app.models.user import User
 from app.schemas.user import UserCreate, UserResponse
+from app.core.security import hash_password
 
 
 class CRUDUser:
     @staticmethod
-    def create_user (db: Session, user: UserCreate) -> UserResponse:
+    def create_user(db: Session, user: UserCreate) -> UserResponse:
         db_user = User(
             name=user.name,
             lastname=user.lastname,
             email=user.email,
             building=user.building,
-            password=user.password, 
+            password=hash_password(user.password),
             phone=user.phone,
         )
         db.add(db_user)
@@ -56,7 +57,7 @@ class CRUDUser:
             db_user.lastname = user_update.lastname
             db_user.email = user_update.email
             db_user.building = user_update.building
-            db_user.password = user_update.password
+            db_user.password = hash_password(user_update.password)
             db_user.phone = user_update.phone
             db.commit()
             db.refresh(db_user)

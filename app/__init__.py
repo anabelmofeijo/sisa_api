@@ -17,8 +17,10 @@ from sqlalchemy import (
     Float,
     ForeignKey
 )
-from app.core.config import Base, SessionLocal, get_db
+from app.core.config import Base, SessionLocal, get_db, engine, local_engine
 
 
 def CreateDatabaseTables():
-    Base.metadata.create_all(bind=SessionLocal().get_bind())
+    Base.metadata.create_all(bind=engine)
+    if local_engine is not None:
+        Base.metadata.create_all(bind=local_engine)

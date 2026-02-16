@@ -29,6 +29,11 @@ class UserLogin(BaseModel):
     password: str
 
 
+class TokenResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+
+
 class UserUpdate(BaseModel):
     name: Optional[str] = None
     lastname: Optional[str] = None

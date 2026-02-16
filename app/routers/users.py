@@ -1,7 +1,8 @@
 from app import APIRouter, Depends, get_db, HTTPException
-from app.schemas.user import UserCreate, UserResponse
+from app.schemas.user import UserCreate, UserResponse, UserLogin, TokenResponse
 from sqlalchemy.orm import Session
 from app.crud.user import CRUDUser
+from app.core.security import create_access_token, get_current_user, verify_password, hash_password
 
 router = APIRouter()
 
@@ -35,7 +36,10 @@ async def create_user(user: UserCreate, db: Session = Depends(get_db)):
     return crud.create_user(db, user)
 
 @router.get("/list_users", response_model=list[UserResponse])
-async def list_users(db: Session = Depends(get_db)):
+async def list_users(
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user)
+):
     """
     Retrieve all users.
 
@@ -51,7 +55,11 @@ async def list_users(db: Session = Depends(get_db)):
     return crud.list_users(db)
 
 @router.delete("/delete_user/{user_id}")
-async def delete_user(user_id: int, db: Session = Depends(get_db)):
+async def delete_user(
+    user_id: int,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user)
+):
     """
     Delete a user by ID.
 
@@ -73,7 +81,12 @@ async def delete_user(user_id: int, db: Session = Depends(get_db)):
     return {"message": "User not found"}
 
 @router.put("/update_user/{user_id}", response_model=UserResponse)
-async def update_user(user_id: int, user_update: UserCreate, db: Session = Depends(get_db)):
+async def update_user(
+    user_id: int,
+    user_update: UserCreate,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user)
+):
     """
     Update an existing user.
 
@@ -95,33 +108,40 @@ async def update_user(user_id: int, user_update: UserCreate, db: Session = Depen
 
     raise HTTPException(status_code=404, detail="User not found")
 
-@router.get("/get_user_by_email_and_password", response_model=UserResponse)
-async def get_user_by_email_and_password(
-    email: str,
-    password: str,
-    db: Session = Depends(get_db)
-):
+@router.post("/login", response_model=TokenResponse)
+async def login(data: UserLogin, db: Session = Depends(get_db)):
     """
-    Retrieve a user by email and password.
+    Authenticate a user and return an access token.
 
     This endpoint is typically used for authentication purposes.
     It verifies if a user exists with the given email and password.
 
     Args:
-        email (str): User email.
-        password (str): User password.
+        data (UserLogin): User credentials.
         db (Session): Database session dependency.
 
     Returns:
-        UserResponse: The authenticated user.
+        TokenResponse: Access token for authenticated requests.
 
     Raises:
         HTTPException: If the user is not found or credentials are invalid.
     """
     crud = CRUDUser()
-    user = crud.get_user_by_email(db, email)
+    user = crud.get_user_by_email(db, data.email)
 
-    if not user or user.password != password:
-        raise HTTPException(status_code=404, detail="User not found")
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid email or password")
 
-    return UserResponse.from_orm(user)
+    if not verify_password(data.password, user.password):
+        # Compatibilidade: permite login de senhas antigas em texto puro e migra para hash.
+        if user.password != data.password:
+            raise HTTPException(status_code=401, detail="Invalid email or password")
+        user.password = hash_password(data.password)
+        db.commit()
+        db.refresh(user)
+
+    if not verify_password(data.password, user.password):
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+
+    token = create_access_token(subject=user.email)
+    return TokenResponse(access_token=token)
