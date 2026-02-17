@@ -24,12 +24,19 @@ if not DATABASE_URL:
 if DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
-LOCAL_DATABASE_URL = os.getenv(
-    "LOCAL_DATABASE_URL",
-    "postgresql://postgres:postgres@127.0.0.1:54322/postgres"
+APP_ENV = os.getenv("APP_ENV", "development").lower()
+IS_PROD = APP_ENV in {"prod", "production"} or bool(
+    os.getenv("RENDER_SERVICE_ID") or os.getenv("RENDER_INSTANCE_ID") or os.getenv("RENDER")
 )
-if LOCAL_DATABASE_URL.startswith("postgres://"):
-    LOCAL_DATABASE_URL = LOCAL_DATABASE_URL.replace("postgres://", "postgresql://", 1)
+
+LOCAL_DATABASE_URL = None
+if not IS_PROD:
+    LOCAL_DATABASE_URL = os.getenv(
+        "LOCAL_DATABASE_URL",
+        "postgresql://postgres:postgres@127.0.0.1:54322/postgres",
+    )
+    if LOCAL_DATABASE_URL.startswith("postgres://"):
+        LOCAL_DATABASE_URL = LOCAL_DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
 logger = logging.getLogger(__name__)
 SYNC_QUEUE_TABLE = "_offline_sync_queue"

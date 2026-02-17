@@ -37,8 +37,7 @@ async def create_user(user: UserCreate, db: Session = Depends(get_db)):
 
 @router.get("/list_users", response_model=list[UserResponse])
 async def list_users(
-    db: Session = Depends(get_db),
-    current_user=Depends(get_current_user)
+    db: Session = Depends(get_db)
 ):
     """
     Retrieve all users.
