@@ -16,27 +16,30 @@ from sqlalchemy.sql.sqltypes import Enum as SQLEnum
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 load_dotenv(os.path.join(PROJECT_ROOT, ".env"), override=True)
 
-DATABASE_URL = os.getenv("DATABASE_URL")
-if not DATABASE_URL:
-    raise RuntimeError("DATABASE_URL nao definida no ambiente.")
-
-# Ajusta URLs antigas
-if DATABASE_URL.startswith("postgres://"):
-    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
-
 APP_ENV = os.getenv("APP_ENV", "development").lower()
 IS_PROD = APP_ENV in {"prod", "production"} or bool(
     os.getenv("RENDER_SERVICE_ID") or os.getenv("RENDER_INSTANCE_ID") or os.getenv("RENDER")
 )
 
-LOCAL_DATABASE_URL = None
-if not IS_PROD:
-    LOCAL_DATABASE_URL = os.getenv(
-        "LOCAL_DATABASE_URL",
-        "postgresql://postgres:postgres@127.0.0.1:54322/postgres",
-    )
-    if LOCAL_DATABASE_URL.startswith("postgres://"):
-        LOCAL_DATABASE_URL = LOCAL_DATABASE_URL.replace("postgres://", "postgresql://", 1)
+DATABASE_URL = os.getenv("DATABASE_URL")
+if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+
+LOCAL_DATABASE_URL = os.getenv(
+    "LOCAL_DATABASE_URL",
+    "postgresql://postgres:postgres@127.0.0.1:54322/postgres",
+)
+if LOCAL_DATABASE_URL and LOCAL_DATABASE_URL.startswith("postgres://"):
+    LOCAL_DATABASE_URL = LOCAL_DATABASE_URL.replace("postgres://", "postgresql://", 1)
+
+if IS_PROD:
+    if not DATABASE_URL:
+        raise RuntimeError("DATABASE_URL nao definida no ambiente.")
+    PRIMARY_DATABASE_URL = DATABASE_URL
+else:
+    if not LOCAL_DATABASE_URL:
+        raise RuntimeError("LOCAL_DATABASE_URL nao definida no ambiente.")
+    PRIMARY_DATABASE_URL = LOCAL_DATABASE_URL
 
 logger = logging.getLogger(__name__)
 SYNC_QUEUE_TABLE = "_offline_sync_queue"
@@ -54,12 +57,12 @@ def _create_db_engine(url: str):
     return create_engine(url, pool_pre_ping=True, connect_args=connect_args)
 
 
-# Engine principal (nuvem)
-engine = _create_db_engine(DATABASE_URL)
+# Engine principal (local no dev, remoto em prod)
+engine = _create_db_engine(PRIMARY_DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine, expire_on_commit=False)
 
-# Engine secundário (local)
-local_engine = _create_db_engine(LOCAL_DATABASE_URL) if LOCAL_DATABASE_URL else None
+# Engine secundário desativado por padrão
+local_engine = None
 LocalSessionLocal = (
     sessionmaker(autocommit=False, autoflush=False, bind=local_engine, expire_on_commit=False)
     if local_engine is not None
