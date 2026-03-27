@@ -4,6 +4,7 @@ from app.models import battery, alert, maintenance, building, user, energy
 from app.models.alert import ElevatorWorkingAlert
 from app import FastAPI, CORSMiddleware
 from app.routers import energy, batteries, alerts, maintenance, building, users, logs
+from app.routers.alerts import start_alert_monitor, stop_alert_monitor
 
 app = FastAPI(title="SISA API", version="1.0")
 
@@ -26,6 +27,17 @@ app.include_router(users.router, prefix="/users", tags=["users"])
 app.include_router(logs.router, prefix="/logs", tags=["logs"])
 
 CreateDatabaseTables()
+
+
+@app.on_event("startup")
+async def startup_event():
+    start_alert_monitor()
+
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    await stop_alert_monitor()
+
 
 @app.get("/")
 async def start():

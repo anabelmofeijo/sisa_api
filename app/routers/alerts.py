@@ -1,138 +1,176 @@
+import asyncio
+from datetime import datetime
+from typing import Optional
+
 from app import APIRouter, HTTPException, Depends, get_db
 from sqlalchemy.orm import Session
-from app.schemas.alerts import AlertCreate, AlertResponse, AlertResolve
+from app.schemas.alerts import (
+    AlertCreate,
+    AlertResponse,
+    AlertResolve,
+    AlertsStatistics,
+    ElevatorFloorStatus,
+    ElevatorFloorResponse,
+    BatteryTelemetry,
+)
+from app.schemas.battery import BateryType
+from app.models.battery import Battery
 from app.crud.alert import AlertCRUD
-from app.schemas.alerts import ElevatorWorkingAlert, ElevatorWorkingAlertResponse
+from app.core.config import SessionLocal
 
 router = APIRouter()
 
-@router.get("/")
-async def running():
-    """
-    Health check endpoint.
+last_floor_status: Optional[ElevatorFloorStatus] = None
+last_battery_telemetry: Optional[BatteryTelemetry] = None
+_monitor_task: Optional[asyncio.Task] = None
 
-    Used to verify if the alerts service is running correctly.
 
-    Returns:
-        dict: A confirmation message.
-    """
-    return {"message": "alerts is running"}
 
-@router.post("/create/", response_model=AlertResponse)
-async def create_alert(alert: AlertCreate, db: Session = Depends(get_db)):
-    """
-    Create a new alert.
-
-    This endpoint registers a new alert in the system, such as incidents,
-    warnings, or system-generated notifications.
-
-    Args:
-        alert (AlertCreate): Alert data to be created.
-        db (Session): Database session dependency.
-
-    Returns:
-        AlertResponse: The created alert.
-    """
+@router.post("/create", response_model=AlertResponse, name="alerts_create")
+async def alerts_create(alert: AlertCreate, db: Session = Depends(get_db)):
+    """Create a new alert."""
     return AlertCRUD.create_alert(db, alert)
 
-@router.get("/get_alert_by_id/{alert_id}", response_model=AlertResponse)
-async def get_alert(alert_id: int, db: Session = Depends(get_db)):
-    """
-    Retrieve an alert by ID.
 
-    This endpoint fetches a specific alert using its unique identifier.
-
-    Args:
-        alert_id (int): The ID of the alert.
-        db (Session): Database session dependency.
-
-    Returns:
-        AlertResponse: The requested alert.
-
-    Raises:
-        HTTPException: If the alert does not exist.
-    """
-    return AlertCRUD.get_alert(db, alert_id)
-
-@router.get("/get_all_alerts/", response_model=list[AlertResponse])
-async def get_all_alerts(db: Session = Depends(get_db)):
-    """
-    Retrieve all alerts.
-
-    This endpoint returns a list of all alerts registered in the system.
-
-    Args:
-        db (Session): Database session dependency.
-
-    Returns:
-        List[AlertResponse]: A list of all alerts.
-    """
+@router.get("", response_model=list[AlertResponse], name="alerts_list")
+async def alerts_list(db: Session = Depends(get_db)):
+    """List all alerts."""
     return AlertCRUD.get_all_alerts(db)
 
-@router.put("/resolve/{alert_id}", response_model=AlertResponse)
-async def resolve_alert(alert_id: int, alert_resolve: AlertResolve, db: Session = Depends(get_db)):
-    """
-    Resolve an alert.
 
-    This endpoint updates the status of an alert to resolved and may include
-    resolution details such as comments or timestamps.
+@router.get("/statistics", response_model=AlertsStatistics, name="alerts_statistics")
+async def alerts_statistics(db: Session = Depends(get_db)):
+    """Get alerts statistics (critical, warning, info, resolved count)."""
+    return AlertCRUD.get_alerts_statistics(db)
 
-    Args:
-        alert_id (int): The ID of the alert to resolve.
-        alert_resolve (AlertResolve): Resolution information.
-        db (Session): Database session dependency.
 
-    Returns:
-        AlertResponse: The resolved alert.
-    """
+@router.put("/{alert_id}/resolve", response_model=AlertResponse, name="alerts_resolve")
+async def alerts_resolve(alert_id: int, alert_resolve: AlertResolve, db: Session = Depends(get_db)):
+    """Update alert as resolved."""
+    alert_update = alert_resolve.copy(update={"id": alert_id})
     return AlertCRUD.resolve_alert(db, alert_id, alert_resolve)
 
-@router.delete("/delete_alert/{alert_id}")
-async def delete_alert(alert_id: int, db: Session = Depends(get_db)):
-    """
-    Delete an alert by ID.
 
-    This endpoint permanently removes an alert from the system.
-
-    Args:
-        alert_id (int): The ID of the alert to delete.
-        db (Session): Database session dependency.
-
-    Returns:
-        dict: Confirmation message.
-    """
+@router.delete("/{alert_id}", name="alerts_delete")
+async def alerts_delete(alert_id: int, db: Session = Depends(get_db)):
+    """Delete an alert."""
     AlertCRUD.delete_alert(db, alert_id)
-    return {"message": "Alert deleted successfully"}
+    return {"id": alert_id, "message": "Alert deleted successfully"}
 
-@router.post("/report_elevator_working_status/", response_model=ElevatorWorkingAlertResponse)
-async def report_elevator_working_status(alert: ElevatorWorkingAlert, db: Session = Depends(get_db)):
-    """
-    Report elevator working status.
 
-    This endpoint is used to report whether an elevator is working or not.
-    It creates a specialized alert related to elevator operational status.
+@router.post("/elevator-status", response_model=ElevatorFloorResponse, name="elevator_status_update")
+async def elevator_status_update(status: ElevatorFloorStatus):
+    """Send elevator floor and movement status."""
+    global last_floor_status
+    last_floor_status = status
+    return ElevatorFloorResponse(
+        floor=status.floor,
+        is_moving=status.is_moving,
+        last_updated=datetime.utcnow()
+    )
 
-    Args:
-        alert (ElevatorWorkingAlert): Elevator status report data.
-        db (Session): Database session dependency.
 
-    Returns:
-        ElevatorWorkingAlertResponse: The created elevator status alert.
-    """
-    return AlertCRUD.report_elevator_working_status(db, alert)
+@router.post("/battery-telemetry", response_model=AlertResponse, name="battery_telemetry_update")
+async def battery_telemetry_update(telemetry: BatteryTelemetry, db: Session = Depends(get_db)):
+    """Send battery telemetry data."""
+    global last_battery_telemetry
+    last_battery_telemetry = telemetry
+    alerts = AlertCRUD.process_battery_telemetry(db, telemetry)
+    if alerts:
+        return alerts[0]
+    return AlertResponse(
+        id=0,
+        title="Battery ok",
+        description="No alerts detected",
+        level="info",
+        status="active",
+        device_id=telemetry.battery_id,
+        measured_value=telemetry.percentage,
+        unit="%",
+        detected_at=datetime.utcnow(),
+        resolved_at=None,
+        created_at=datetime.utcnow()
+    )
 
-@router.get("/elevator_working_alerts/", response_model=list[ElevatorWorkingAlertResponse])
-async def get_elevator_working_alerts(db: Session = Depends(get_db)):
-    """
-    Retrieve all elevator working status alerts.
 
-    This endpoint returns a list of alerts related specifically
-    to elevator operational conditions.
+@router.get("/elevator-status", response_model=Optional[ElevatorFloorResponse], name="elevator_status_get")
+async def elevator_status_get():
+    """Get current elevator floor and movement status."""
+    if last_floor_status is None:
+        raise HTTPException(status_code=404, detail="No elevator status data available")
+    return ElevatorFloorResponse(
+        floor=last_floor_status.floor,
+        is_moving=last_floor_status.is_moving,
+        last_updated=datetime.utcnow()
+    )
 
-    Args:
-        db (Session): Database session dependency.
 
-    Returns:
-        List[ElevatorWorkingAlertResponse]: Elevator working status alerts.
-    """
-    return AlertCRUD.get_elevator_working_alerts(db)
+async def _automatic_system_monitor():
+    """Monitor battery data from database every 2 minutes and generate alerts."""
+    
+    while True:
+        await asyncio.sleep(120)  # 2 minutes
+        
+        with SessionLocal() as db:
+            try:
+                # Get latest battery records from database
+                batteries = db.query(Battery).order_by(Battery.created_at.desc()).limit(2).all()
+                
+                if not batteries:
+                    print(f"[ALERT MONITOR] ⚠️ No battery data in database yet")
+                    continue
+                
+                for battery in batteries:
+                    print(f"[ALERT MONITOR] Checking {battery.battery_name.value} - Voltage: {battery.voltage}V, Percentage: {battery.percentage}%")
+                    
+                    # Convert Battery to BatteryTelemetry
+                    telemetry = BatteryTelemetry(
+                        battery_id=battery.id,
+                        battery_name=battery.battery_name.value,
+                        percentage=battery.percentage,
+                        voltage=battery.voltage,
+                        current=battery.current,
+                        status=battery.status.value,
+                        swapped=False,
+                        random_discharge=False
+                    )
+                    
+                    # Check for alerts
+                    alerts = AlertCRUD.process_battery_telemetry(db, telemetry)
+                    if alerts:
+                        print(f"[ALERT MONITOR] ✅ Generated {len(alerts)} alert(s) for {battery.battery_name.value}")
+                    else:
+                        print(f"[ALERT MONITOR] ℹ️ {battery.battery_name.value} OK - No alerts")
+                        
+            except Exception as e:
+                print(f"[ALERT MONITOR] ❌ Error monitoring database: {e}")
+
+
+def start_alert_monitor():
+    """Start the automatic alert monitoring system."""
+    global _monitor_task
+    if _monitor_task is None or _monitor_task.done():
+        _monitor_task = asyncio.create_task(_automatic_system_monitor())
+        print("[ALERT MONITOR] Started automatic monitoring (every 2 minutes)")
+
+
+async def stop_alert_monitor():
+    """Stop the automatic alert monitoring system."""
+    global _monitor_task
+    if _monitor_task is not None:
+        _monitor_task.cancel()
+        try:
+            await _monitor_task
+        except asyncio.CancelledError:
+            pass
+        _monitor_task = None
+        print("[ALERT MONITOR] Stopped automatic monitoring")
+
+
+def start_anomaly_monitor():
+    start_alert_monitor()
+
+
+async def stop_anomaly_monitor():
+    await stop_alert_monitor()
+
