@@ -1,18 +1,19 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from app import CreateDatabaseTables
 from app.models import battery, alert, maintenance, building, user, energy
 from app.models.alert import ElevatorWorkingAlert
-from app import FastAPI, CORSMiddleware
 from app.routers import energy, batteries, alerts, maintenance, building, users, logs
 from app.routers.alerts import start_alert_monitor, stop_alert_monitor
 
 app = FastAPI(title="SISA API", version="1.0")
 
+# CORS Configuration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
+    allow_origins=["*"],  # Para produção, substitua com: ["https://seu-dominio.com"]
+    allow_credentials=False,  # Mude para True apenas se usar allow_origins específico
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
 
