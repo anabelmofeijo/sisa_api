@@ -71,11 +71,12 @@ class AlertCRUD:
 
     @staticmethod
     def resolve_alert(db: Session, alert_id: int, alert_resolve: AlertResolve) -> AlertResponse:
+        from app.schemas.alerts import AlertStatus
         db_alert = db.query(Alert).filter(Alert.id == alert_id).first()
         if not db_alert:
             raise HTTPException(status_code=404, detail="Alert not found")
-        db_alert.is_resolved = True
-        db_alert.resolved_at = alert_resolve.resolved_at
+        db_alert.status = AlertStatus.resolved
+        db_alert.resolved_at = alert_resolve.resolved_at or datetime.now()
         db.commit()
         db.refresh(db_alert)
         return AlertResponse.from_orm(db_alert)

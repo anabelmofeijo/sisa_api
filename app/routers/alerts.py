@@ -47,7 +47,6 @@ async def alerts_statistics(db: Session = Depends(get_db)):
 @router.put("/{alert_id}/resolve", response_model=AlertResponse, name="alerts_resolve")
 async def alerts_resolve(alert_id: int, alert_resolve: AlertResolve, db: Session = Depends(get_db)):
     """Update alert as resolved."""
-    alert_update = alert_resolve.copy(update={"id": alert_id})
     return AlertCRUD.resolve_alert(db, alert_id, alert_resolve)
 
 

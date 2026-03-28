@@ -48,7 +48,7 @@ class AlertCreate(BaseModel):
 
 class AlertResolve(BaseModel):
     id: Optional[int] = None
-    status: AlertStatus
+    resolved_at: Optional[datetime] = None
 
 
 class AlertResponse(BaseModel):

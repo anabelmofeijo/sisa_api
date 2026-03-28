@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from app import CreateDatabaseTables
 from app.models import battery, alert, maintenance, building, user, energy
 from app.models.alert import ElevatorWorkingAlert
@@ -38,6 +39,20 @@ async def startup_event():
 @app.on_event("shutdown")
 async def shutdown_event():
     await stop_alert_monitor()
+
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request, exc):
+    """Handle all exceptions and ensure CORS headers are included."""
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Internal server error"},
+        headers={
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+            "Access-Control-Allow-Headers": "*",
+        }
+    )
 
 
 @app.get("/")
