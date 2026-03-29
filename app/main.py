@@ -6,6 +6,7 @@ from app.models import battery, alert, maintenance, building, user, energy
 from app.models.alert import ElevatorWorkingAlert
 from app.routers import energy, batteries, alerts, maintenance, building, users, logs
 from app.routers.alerts import start_alert_monitor, stop_alert_monitor
+from app.routers.energy import start_energy_monitor, stop_energy_monitor
 
 app = FastAPI(title="SISA API", version="1.0")
 
@@ -34,11 +35,13 @@ CreateDatabaseTables()
 @app.on_event("startup")
 async def startup_event():
     start_alert_monitor()
+    start_energy_monitor()
 
 
 @app.on_event("shutdown")
 async def shutdown_event():
     await stop_alert_monitor()
+    await stop_energy_monitor()
 
 
 @app.exception_handler(Exception)
