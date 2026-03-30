@@ -9,8 +9,8 @@ from app.schemas.alerts import (
     AlertResponse,
     AlertResolve,
     AlertsStatistics,
-    ElevatorFloorStatus,
-    ElevatorFloorResponse,
+    ElevatorMovementStatus,
+    ElevatorMovementResponse,
     BatteryTelemetry,
 )
 from app.schemas.battery import BateryType
@@ -20,7 +20,7 @@ from app.core.config import SessionLocal
 
 router = APIRouter()
 
-last_floor_status: Optional[ElevatorFloorStatus] = None
+last_floor_status: Optional[ElevatorMovementStatus] = None
 last_battery_telemetry: Optional[BatteryTelemetry] = None
 _monitor_task: Optional[asyncio.Task] = None
 
@@ -54,16 +54,15 @@ async def alerts_resolve(alert_id: int, alert_resolve: AlertResolve, db: Session
 async def alerts_delete(alert_id: int, db: Session = Depends(get_db)):
     """Delete an alert."""
     AlertCRUD.delete_alert(db, alert_id)
-    return {"id": alert_id, "message": "Alert deleted successfully"}
+    return {"id": alert_id, "message": "Alerta eliminado com sucesso"}
 
 
-@router.post("/elevator-status", response_model=ElevatorFloorResponse, name="elevator_status_update")
-async def elevator_status_update(status: ElevatorFloorStatus):
-    """Send elevator floor and movement status."""
+@router.post("/elevator-status", response_model=ElevatorMovementResponse, name="elevator_status_update")
+async def elevator_status_update(status: ElevatorMovementStatus):
+    """Send elevator movement status."""
     global last_floor_status
     last_floor_status = status
-    return ElevatorFloorResponse(
-        floor=status.floor,
+    return ElevatorMovementResponse(
         is_moving=status.is_moving,
         last_updated=datetime.utcnow()
     )
@@ -79,8 +78,8 @@ async def battery_telemetry_update(telemetry: BatteryTelemetry, db: Session = De
         return alerts[0]
     return AlertResponse(
         id=0,
-        title="Battery ok",
-        description="No alerts detected",
+        title="Bateria normal",
+        description="Nenhum alerta detetado",
         level="info",
         status="active",
         device_id=telemetry.battery_id,
@@ -92,13 +91,12 @@ async def battery_telemetry_update(telemetry: BatteryTelemetry, db: Session = De
     )
 
 
-@router.get("/elevator-status", response_model=Optional[ElevatorFloorResponse], name="elevator_status_get")
+@router.get("/elevator-status", response_model=Optional[ElevatorMovementResponse], name="elevator_status_get")
 async def elevator_status_get():
-    """Get current elevator floor and movement status."""
+    """Get current elevator movement status."""
     if last_floor_status is None:
-        raise HTTPException(status_code=404, detail="No elevator status data available")
-    return ElevatorFloorResponse(
-        floor=last_floor_status.floor,
+        raise HTTPException(status_code=404, detail="Não há dados do estado do elevador disponíveis")
+    return ElevatorMovementResponse(
         is_moving=last_floor_status.is_moving,
         last_updated=datetime.utcnow()
     )
@@ -116,13 +114,13 @@ async def _automatic_system_monitor():
                 batteries = db.query(Battery).order_by(Battery.created_at.desc()).limit(2).all()
                 
                 if not batteries:
-                    print(f"[ALERT MONITOR] ⚠️ No battery data in database yet")
+                    print(f"[ALERT MONITOR] ⚠️ Ainda não há dados de baterias na base de dados")
                     continue
                 
                 for battery in batteries:
-                    print(f"[ALERT MONITOR] Checking {battery.battery_name.value} - Voltage: {battery.voltage}V, Percentage: {battery.percentage}%")
+                    print(f"[ALERT MONITOR] A verificar {battery.battery_name.value} - Tensão: {battery.voltage}V, Percentagem: {battery.percentage}%")
                     
-                    # Convert Battery to BatteryTelemetry
+                    # Converte Battery para BatteryTelemetry.
                     telemetry = BatteryTelemetry(
                         battery_id=battery.id,
                         battery_name=battery.battery_name.value,
@@ -134,15 +132,15 @@ async def _automatic_system_monitor():
                         random_discharge=False
                     )
                     
-                    # Check for alerts
+                    # Verifica se existem alertas.
                     alerts = AlertCRUD.process_battery_telemetry(db, telemetry)
                     if alerts:
-                        print(f"[ALERT MONITOR] ✅ Generated {len(alerts)} alert(s) for {battery.battery_name.value}")
+                        print(f"[ALERT MONITOR] ✅ Foram gerados {len(alerts)} alerta(s) para {battery.battery_name.value}")
                     else:
-                        print(f"[ALERT MONITOR] ℹ️ {battery.battery_name.value} OK - No alerts")
+                        print(f"[ALERT MONITOR] ℹ️ {battery.battery_name.value} normal - Sem alertas")
                         
             except Exception as e:
-                print(f"[ALERT MONITOR] ❌ Error monitoring database: {e}")
+                print(f"[ALERT MONITOR] ❌ Erro ao monitorizar a base de dados: {e}")
 
 
 def start_alert_monitor():
@@ -150,7 +148,7 @@ def start_alert_monitor():
     global _monitor_task
     if _monitor_task is None or _monitor_task.done():
         _monitor_task = asyncio.create_task(_automatic_system_monitor())
-        print("[ALERT MONITOR] Started automatic monitoring (every 2 minutes)")
+        print("[ALERT MONITOR] Monitorização automática iniciada (a cada 2 minutos)")
 
 
 async def stop_alert_monitor():
@@ -163,7 +161,7 @@ async def stop_alert_monitor():
         except asyncio.CancelledError:
             pass
         _monitor_task = None
-        print("[ALERT MONITOR] Stopped automatic monitoring")
+        print("[ALERT MONITOR] Monitorização automática parada")
 
 
 def start_anomaly_monitor():
@@ -172,4 +170,3 @@ def start_anomaly_monitor():
 
 async def stop_anomaly_monitor():
     await stop_alert_monitor()
-

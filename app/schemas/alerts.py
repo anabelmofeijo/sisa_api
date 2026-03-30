@@ -87,13 +87,11 @@ class AlertsStatistics(BaseModel):
     total: int
 
 
-class ElevatorFloorStatus(BaseModel):
-    floor: int
+class ElevatorMovementStatus(BaseModel):
     is_moving: bool
 
 
-class ElevatorFloorResponse(BaseModel):
-    floor: int
+class ElevatorMovementResponse(BaseModel):
     is_moving: bool
     last_updated: datetime
 
