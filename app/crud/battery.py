@@ -1,5 +1,5 @@
 from app.models.battery import Battery
-from app.schemas.battery import BatteryCreate, BatteryResponse
+from app.schemas.battery import BatteryCreate, BatteryResponse, BateryType
 from app import SessionLocal, get_db, HTTPException, Depends
 from sqlalchemy.orm import Session  
 from datetime import datetime
@@ -7,15 +7,34 @@ from datetime import datetime
 
 class BatteryCRUD:
     @staticmethod
+    def _normalize_battery_payload(battery: BatteryCreate) -> dict:
+        payload = battery.model_dump()
+
+        # Batery B arrives from the legacy sender with the voltage/current
+        # pair and the percentage/temperature pair inverted.
+        if battery.battery_name == BateryType.second_batery:
+            payload["percentage"], payload["temperature"] = (
+                payload["temperature"],
+                payload["percentage"],
+            )
+            payload["voltage"], payload["current"] = (
+                payload["current"],
+                payload["voltage"],
+            )
+
+        return payload
+
+    @staticmethod
     def create_battery(db: Session, battery: BatteryCreate) -> BatteryResponse:
+        normalized_battery = BatteryCRUD._normalize_battery_payload(battery)
         db_battery = Battery(
-            battery_name=battery.battery_name,
-            status=battery.status,
-            percentage=battery.percentage,
-            health=battery.health,
-            temperature=battery.temperature,
-            voltage=battery.voltage,
-            current=battery.current,
+            battery_name=normalized_battery["battery_name"],
+            status=normalized_battery["status"],
+            percentage=normalized_battery["percentage"],
+            health=normalized_battery["health"],
+            temperature=normalized_battery["temperature"],
+            voltage=normalized_battery["voltage"],
+            current=normalized_battery["current"],
             created_at= datetime.utcnow()
         )
         db.add(db_battery)
