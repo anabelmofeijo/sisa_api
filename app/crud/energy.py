@@ -8,6 +8,13 @@ from app.schemas.battery import BateryType, Statustype
 
 ENERGY_REFRESH_SECONDS = 60
 BATTERY_CAPACITY_KWH = 5.0
+FIXED_CONSUMPTION_CURRENT_A = 2.0
+REGENERATIVE_EFFICIENCY = 0.8
+BATTERY_EFFICIENCY = 0.8
+SECONDS_PER_HOUR = 3600.0
+JOULES_PER_WH = 3600.0
+JOULES_PER_KWH = 3_600_000.0
+KILOJOULES_PER_WH = 3.6
 
 class EnergyCRUD:
     @staticmethod
@@ -28,23 +35,36 @@ class EnergyCRUD:
         generated = 0.0
         consumed = 0.0
         stored = 0.0
+        panel_generated = 0.0
+        regeneration_generated = 0.0
+        interval_hours = ENERGY_REFRESH_SECONDS / SECONDS_PER_HOUR
 
         for battery in batteries:
-            power_kw = max((battery.voltage or 0) * abs(battery.current or 0) / 1000.0, 0.0)
-            stored += max(min((battery.percentage or 0), 100), 0) / 100.0 * BATTERY_CAPACITY_KWH
+            voltage = max(battery.voltage or 0, 0.0)
+            power_w = voltage * FIXED_CONSUMPTION_CURRENT_A
+            consumed_energy_wh = power_w * interval_hours
+            consumed += consumed_energy_wh * KILOJOULES_PER_WH
+            stored_energy_wh = power_w * interval_hours * BATTERY_EFFICIENCY
+            stored += stored_energy_wh * KILOJOULES_PER_WH
 
             if battery.status in (Statustype.charging, Statustype.full, Statustype.not_charging):
-                generated += power_kw
+                panel_energy_wh = power_w * interval_hours
+                panel_energy_j = panel_energy_wh * JOULES_PER_WH
+                panel_generated += panel_energy_j
+                generated += panel_energy_j
             elif battery.status == Statustype.discharging:
-                consumed += power_kw
+                regenerative_energy_wh = REGENERATIVE_EFFICIENCY * power_w * interval_hours
+                regenerative_energy_j = regenerative_energy_wh * JOULES_PER_WH
+                regeneration_generated += regenerative_energy_j
+                generated += regenerative_energy_j
 
         return EnergyCreate(
             energy_generated=round(generated, 3),
             energy_consumed=round(consumed, 3),
             energy_stored=round(stored, 3),
             energy_origin={
-                "panel": round(generated, 3),
-                "regeneration": 0.0
+                "panel": round(panel_generated, 3),
+                "regeneration": round(regeneration_generated, 3)
             }
         )
 
